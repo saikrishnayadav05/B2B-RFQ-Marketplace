@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: b2b-rfq-postgres
+    environment:
+      POSTGRES_USER: rfq_user
+      POSTGRES_PASSWORD: rfq_password
+      POSTGRES_DB: rfq_marketplace
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rfq_user -d rfq_marketplace"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
