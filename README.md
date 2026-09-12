@@ -4,13 +4,12 @@ A mini B2B Request for Quotation (RFQ) marketplace where **buyers** post busines
 
 ## Live Demo
 
-> Update these after deployment:
-
 | Link | URL |
 |------|-----|
-| **Live application** | `https://your-frontend.vercel.app` |
+| **Live application** | [https://b2-b-rfq-marketplace.vercel.app](https://b2-b-rfq-marketplace.vercel.app) |
 | **GitHub repository** | [https://github.com/saikrishnayadav05/B2B-RFQ-Marketplace](https://github.com/saikrishnayadav05/B2B-RFQ-Marketplace) |
-| **API docs (Swagger)** | `https://your-api.up.railway.app/docs` |
+| **API health check** | [https://b2b-rfq-marketplace-production.up.railway.app/health](https://b2b-rfq-marketplace-production.up.railway.app/health) |
+| **API docs (Swagger)** | [https://b2b-rfq-marketplace-production.up.railway.app/docs](https://b2b-rfq-marketplace-production.up.railway.app/docs) |
 
 ## How It Works
 
@@ -45,7 +44,7 @@ RFQ closes · winning supplier sees "Won" · others see "Not selected"
 | Database | PostgreSQL |
 | Auth | JWT + bcrypt password hashing |
 | Migrations | Alembic |
-| Deployment | Vercel (frontend) + Railway (API + PostgreSQL) |
+| Deployment | Vercel (frontend) + Railway (API) + Neon (PostgreSQL) |
 
 ## Architecture
 
@@ -291,7 +290,7 @@ Choose **GitHub.com → HTTPS → Login with a web browser**, then sign in as th
 
 ## Demo Test Data (optional)
 
-Use password **`Password123`** for all test accounts.
+Use password **`Test1234`** for all test accounts (minimum 8 characters).
 
 | Role | Email | Full name |
 |------|-------|-----------|
@@ -316,11 +315,14 @@ Register these via the app, then create RFQs as buyers and submit quotes as supp
 | `JWT_EXPIRE_HOURS` | Token expiry (default: 24) |
 | `CORS_ORIGINS` | Comma-separated frontend URLs |
 
-### Frontend (`frontend/.env`)
+### Frontend (`frontend/.env` locally, Vercel env vars in production)
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_API_URL` | Backend base URL (e.g. `http://localhost:8000`) |
+| `VITE_API_URL` | Backend base URL for local dev (e.g. `http://localhost:8000`) |
+| `API_URL` | Used on **Vercel** — set to your Railway API URL (no trailing slash, no `/api/v1`) |
+
+> **Vercel note:** Set `API_URL` (not `VITE_API_URL`) in the Vercel dashboard. The build maps it into the frontend automatically. Do **not** add a trailing slash.
 
 ## API Overview
 
@@ -370,7 +372,9 @@ Create a free PostgreSQL on **Neon** (recommended) or add PostgreSQL on **Railwa
 |----------|-------|
 | `DATABASE_URL` | Your Neon/Railway/Supabase connection string |
 | `JWT_SECRET` | Long random secret string |
-| `CORS_ORIGINS` | `https://your-app.vercel.app` (add after Vercel deploy) |
+| `JWT_ALGORITHM` | `HS256` |
+| `JWT_EXPIRE_HOURS` | `24` |
+| `CORS_ORIGINS` | `https://b2-b-rfq-marketplace.vercel.app,http://localhost:5173` |
 
 5. Start command (already in `railway.toml`):
 
@@ -378,7 +382,7 @@ Create a free PostgreSQL on **Neon** (recommended) or add PostgreSQL on **Railwa
 alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-6. Copy your Railway public URL (e.g. `https://your-api.up.railway.app`).
+6. Copy your Railway public URL (production: `https://b2b-rfq-marketplace-production.up.railway.app`).
 
 ### Step 3: Frontend (Vercel)
 
@@ -388,25 +392,29 @@ alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
 | Variable | Value |
 |----------|-------|
-| `VITE_API_URL` | Your Railway API URL (no trailing slash) |
+| `API_URL` | `https://b2b-rfq-marketplace-production.up.railway.app` (no trailing slash) |
 
-4. Deploy and copy your live URL (e.g. `https://your-app.vercel.app`).
+4. Deploy and copy your live URL (production: `https://b2-b-rfq-marketplace.vercel.app`).
 
 ### Step 4: Final CORS update
 
-Go back to Railway → backend service → variables → update `CORS_ORIGINS` to your Vercel URL, then redeploy.
+Go back to Railway → backend service → variables → confirm `CORS_ORIGINS` includes your Vercel URL, then redeploy if needed.
 
 Example:
 
 ```env
-CORS_ORIGINS=https://your-app.vercel.app,http://localhost:5173
+CORS_ORIGINS=https://b2-b-rfq-marketplace.vercel.app,http://localhost:5173
 ```
+
+The backend also allows any `https://*.vercel.app` origin via regex for preview deployments.
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
 | Browser shows `{"detail":"Not Found"}` on port 8000 | You opened the **API**, not the UI. Use http://localhost:5173 |
+| Login/register shows **"Not Found"** on live site | Usually a trailing slash on `API_URL` causing `//api/v1` in requests. Remove the trailing slash in Vercel env vars and redeploy |
+| **"Cannot reach the API"** when creating RFQs | You may be on **localhost:5173** without the backend running. Use the live Vercel URL, or start backend with `uvicorn app.main:app --reload --port 8000` |
 | Login shows "Something went wrong" | Restart backend. Run `alembic upgrade head` (needs migration `002` for finalize) |
 | Login shows "Invalid email or password" | Wrong password — register again or use the password from registration |
 | My RFQs page error after finalize feature | Run `cd backend && alembic upgrade head` on your Neon database |
