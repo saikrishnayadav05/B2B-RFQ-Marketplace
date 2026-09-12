@@ -1,20 +1,24 @@
 const DEFAULT_LOCAL_API = 'http://localhost:8000';
 const PRODUCTION_API = 'https://b2b-rfq-marketplace-production.up.railway.app';
 
-function resolveApiBaseUrl(): string {
-  const configured = import.meta.env.VITE_API_URL || DEFAULT_LOCAL_API;
-
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host.endsWith('.vercel.app') && configured === DEFAULT_LOCAL_API) {
-      return PRODUCTION_API;
-    }
+function normalizeApiBaseUrl(url: string): string {
+  let normalized = url.trim().replace(/\/+$/, '');
+  if (normalized.endsWith('/api/v1')) {
+    normalized = normalized.slice(0, -'/api/v1'.length);
   }
-
-  return configured;
+  return normalized;
 }
 
-export const apiBaseUrl = resolveApiBaseUrl();
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app')) {
+    return PRODUCTION_API;
+  }
+
+  return normalizeApiBaseUrl(import.meta.env.VITE_API_URL || DEFAULT_LOCAL_API);
+}
+
+// Keep for any existing imports; always resolve at call time in the API client.
+export const apiBaseUrl = getApiBaseUrl();
 
 export function getAuthToken(): string | null {
   return localStorage.getItem('access_token');

@@ -8,7 +8,7 @@ import type {
   User,
 } from '../types';
 import {
-  apiBaseUrl,
+  getApiBaseUrl,
   clearAuthToken,
   clearStoredUser,
   getAuthToken,
@@ -17,13 +17,13 @@ import {
 } from './client';
 
 const api = axios.create({
-  baseURL: `${apiBaseUrl}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 api.interceptors.request.use((config) => {
+  config.baseURL = `${getApiBaseUrl()}/api/v1`;
   const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
