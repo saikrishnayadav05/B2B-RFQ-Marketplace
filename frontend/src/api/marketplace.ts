@@ -156,6 +156,9 @@ export function getErrorMessage(error: unknown): string {
     const detail = error.response?.data?.detail;
     if (typeof detail === 'string') return detail;
     if (Array.isArray(detail)) return detail[0]?.msg || 'Request failed';
+    if (error.code === 'ERR_NETWORK') {
+      return 'Cannot reach the API. Check that the backend is running and CORS is configured.';
+    }
   }
   return 'Something went wrong. Please try again.';
 }
